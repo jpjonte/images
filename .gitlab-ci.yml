@@ -9,6 +9,7 @@ services:
 variables:
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_DRIVER: overlay2
+  BASE_NAMESPACE: ${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
 
 before_script:
   - echo -n ${CI_BUILD_TOKEN} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
@@ -16,7 +17,7 @@ before_script:
 build:php:8.0:
   stage: build
   variables:
-    NAMESPACE: ${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/php
+    NAMESPACE: ${BASE_NAMESPACE}/php
     IMAGE_VERSION: "8.0"
     DOCKERFILE: php/8.0/Dockerfile
   script:
@@ -27,3 +28,18 @@ build:php:8.0:
       - tags
     changes:
       - php/8.0/**/*
+
+build:docker:
+  stage: build
+  variables:
+    NAMESPACE: ${BASE_NAMESPACE}/docker
+    IMAGE_VERSION: latest
+    DOCKERFILE: docker/Dockerfile
+  script:
+    - scripts/build.sh
+  only:
+    refs:
+      - main
+      - tags
+    changes:
+      - docker/**/*
