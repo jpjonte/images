@@ -14,6 +14,7 @@ before_script:
   - echo -n ${CI_BUILD_TOKEN} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
 
 build:php:8.0:
+  stage: build
   variables:
     NAMESPACE: ${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/php
     IMAGE_VERSION: "8.0"
