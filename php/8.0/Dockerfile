@@ -6,7 +6,7 @@ COPY ./php/scripts/*.sh /tmp/
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN chmod +x /tmp/*.sh \
-  && adduser -D $IMAGE_USER \
+  && adduser -D php \
   && mkdir -p /var/www/html \
   && apk add --update --no-cache bash \
   && bash ./packages.sh \
