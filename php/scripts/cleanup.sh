@@ -2,7 +2,11 @@
 
 set -euo pipefail
 
-apk del --purge grep build-base file openssl-dev
+apk del --purge \
+  openssl-dev
+#  grep \
+#  build-base \
+#  file \
 
 rm -rf /tmp/* \
         /usr/includes/* \

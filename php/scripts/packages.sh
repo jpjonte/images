@@ -5,31 +5,30 @@ set -euo pipefail
 apk --update --no-cache add \
     g++ \
     gcc \
-    git \
-    grep \
-    jq \
     libc-dev \
     make \
-    mariadb-client \
-    openssh-client \
     openssl \
-    patch \
-    python3 \
-    rsync \
     sudo \
-    zip
+#    git \
+#    grep \
+#    jq \
+#    mariadb-client \
+#    openssh-client \
+#    patch \
+#    python3 \
+#    rsync \
+#    zip
 
 # persistent / runtime deps
 apk add --update --no-cache --virtual .persistent-deps \
-		ca-certificates \
-		tar \
-		xz \
-    curl
+#		ca-certificates \
+#		tar \
+#		xz \
+#    curl
 
 apk add --update --no-cache \
     autoconf \
-    build-base \
-    file \
     openssl-dev \
-    openssl \
     acl
+#    build-base \
+#    file \
