@@ -28,6 +28,7 @@ build:php:8.0:
       - tags
     changes:
       - php/8.0/**/*
+      - php/scripts/**/*
 
 build:docker:
   stage: build
