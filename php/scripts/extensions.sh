@@ -134,7 +134,7 @@ mkdir /usr/local/src/xmlrpc \
 #pecl install mongodb \
 #  && docker-php-ext-enable mongodb
 
-pecl install pcov
+pecl install pcov \
   && docker-php-ext-enable pcov
 
 git clone "https://github.com/php-memcached-dev/php-memcached.git" \
