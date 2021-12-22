@@ -30,6 +30,22 @@ build:php:8.0:
       - php/8.0/**/*
       - php/scripts/**/*
 
+build:php:8.1:
+  stage: build
+  variables:
+    NAMESPACE: ${BASE_NAMESPACE}/php
+    IMAGE_VERSION: "8.1"
+    DOCKERFILE: php/8.1/Dockerfile
+  script:
+    - scripts/build.sh
+  only:
+    refs:
+      - main
+      - tags
+    changes:
+      - php/8.1/**/*
+      - php/scripts/**/*
+
 build:docker:
   stage: build
   variables:
