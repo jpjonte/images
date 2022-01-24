@@ -8,7 +8,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN chmod +x /tmp/*.sh \
   && adduser -D php \
   && mkdir -p /var/www/html \
-  && apk add --update --no-cache bash \
+  && apk add --update --no-cache bash tree \
   && bash ./packages.sh \
   && bash ./extensions.sh \
   && rm -rf ~/.composer/cache/* \
