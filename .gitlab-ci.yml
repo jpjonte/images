@@ -63,3 +63,19 @@ build:docker:
     changes:
       - docker/**/*
       - scripts/**/*
+
+build:flutter:
+  stage: build
+  variables:
+    NAMESPACE: ${BASE_NAMESPACE}/flutter
+    IMAGE_VERSION: latest
+    DOCKERFILE: flutter/Dockerfile
+  script:
+    - scripts/build.sh
+  only:
+    refs:
+      - main
+      - tags
+    changes:
+      - flutter/**/*
+      - scripts/**/*
