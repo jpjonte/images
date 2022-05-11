@@ -29,6 +29,7 @@ build:php:8.0:
     changes:
       - php/8.0/**/*
       - php/scripts/**/*
+      - scripts/**/*
 
 build:php:8.1:
   stage: build
@@ -45,6 +46,7 @@ build:php:8.1:
     changes:
       - php/8.1/**/*
       - php/scripts/**/*
+      - scripts/**/*
 
 build:docker:
   stage: build
@@ -60,3 +62,4 @@ build:docker:
       - tags
     changes:
       - docker/**/*
+      - scripts/**/*
