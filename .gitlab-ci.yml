@@ -31,22 +31,6 @@ build:php:8.1:
       - php/scripts/**/*
       - scripts/**/*
 
-build:docker:
-  stage: build
-  variables:
-    NAMESPACE: ${BASE_NAMESPACE}/docker
-    IMAGE_VERSION: latest
-    DOCKERFILE: docker/Dockerfile
-  script:
-    - scripts/build.sh
-  only:
-    refs:
-      - main
-      - tags
-    changes:
-      - docker/**/*
-      - scripts/**/*
-
 build:flutter:
   stage: build
   variables:
