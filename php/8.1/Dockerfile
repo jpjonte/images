@@ -15,5 +15,3 @@ RUN chmod +x /tmp/*.sh \
   && chown -R php:php /var/www /home/php \
   && echo "php  ALL = ( ALL ) NOPASSWD: ALL" >> /etc/sudoers \
   && bash ./cleanup.sh
-
-USER php
