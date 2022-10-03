@@ -1,4 +1,4 @@
-FROM php:8.1-alpine
+FROM php:8.1-fpm-alpine
 
 WORKDIR /tmp
 
@@ -17,7 +17,3 @@ RUN chmod +x /tmp/*.sh \
   && bash ./cleanup.sh
 
 USER php
-
-WORKDIR /var/www/html
-
-CMD ["php", "-a"]
