@@ -9,6 +9,6 @@ for TAG in $TAGS; do
   LIST="${LIST} -t ${NAMESPACE}:${TAG}"
 done
 
-docker pull $NAMESPACE:$MAIN || true
-docker build --compress --cache-from $NAMESPACE:$MAIN $LIST -f $DOCKERFILE .
-docker push $NAMESPACE:$MAIN
+docker context create ci
+docker buildx create --use ci
+docker buildx build . -f $DOCKERFILE $LIST --platform linux/amd64,linux/arm64 --push
