@@ -9,7 +9,7 @@ apk --update --no-cache add \
     make \
     openssl \
     sudo \
-#    git \
+    git \
 #    grep \
 #    jq \
 #    mariadb-client \
@@ -21,10 +21,10 @@ apk --update --no-cache add \
 
 # persistent / runtime deps
 apk add --update --no-cache --virtual .persistent-deps \
+    curl
 #		ca-certificates \
 #		tar \
 #		xz \
-#    curl
 
 apk add --update --no-cache \
     autoconf \

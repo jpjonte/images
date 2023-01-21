@@ -1,18 +1,15 @@
 stages:
   - build
 
-image: docker:20.10
-
-services:
-  - docker:20.10-dind
+image:
+  name: gcr.io/kaniko-project/executor:v1.9.0-debug
+  entrypoint: [""]
 
 variables:
-  DOCKER_TLS_CERTDIR: "/certs"
-  DOCKER_DRIVER: overlay2
-  BASE_NAMESPACE: ${CI_REGISTRY}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
+  BASE_NAMESPACE: ${REGISTRY_URL}/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
 
 before_script:
-  - echo -n ${CI_BUILD_TOKEN} | docker login -u ${CI_REGISTRY_USER} --password-stdin ${CI_REGISTRY}
+  - scripts/login.sh
 
 build:php:8.1:
   stage: build
