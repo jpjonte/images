@@ -3,6 +3,7 @@
 set -euo pipefail
 
 apk --update --no-cache add \
+    curl \
     g++ \
     gcc \
     libc-dev \
@@ -10,6 +11,7 @@ apk --update --no-cache add \
     openssl \
     sudo \
     git \
+    acl \
 #    grep \
 #    jq \
 #    mariadb-client \
@@ -18,13 +20,6 @@ apk --update --no-cache add \
 #    python3 \
 #    rsync \
 #    zip
-
-# persistent / runtime deps
-apk add --update --no-cache --virtual .persistent-deps \
-    curl
-#		ca-certificates \
-#		tar \
-#		xz \
 
 apk add --update --no-cache \
     autoconf \

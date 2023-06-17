@@ -20,26 +20,10 @@ apk --update --no-cache add \
   libxslt-dev \
   pcre-dev \
   postgresql-dev \
-  zlib-dev
-#  cassandra-cpp-driver \
-#  curl-dev \
-#  cyrus-sasl-dev \
-#  libbz2 \
-#  libedit-dev \
-#  libltdl \
-#  libtool \
-#  openldap-dev \
-#  rabbitmq-c \
-#  rabbitmq-c-dev \
-#  readline-dev \
-#  sqlite-dev \
-
-apk --update --no-cache add \
+  zlib-dev \
   libzip-dev \
   libsodium-dev
 
-#docker-php-ext-configure ldap
-#docker-php-ext-install -j "$(nproc)" ldap
 PHP_OPENSSL=yes docker-php-ext-configure imap --with-kerberos --with-imap-ssl
 docker-php-ext-install -j "$(nproc)" imap
 docker-php-ext-install -j "$(nproc)" exif \
@@ -61,23 +45,10 @@ docker-php-source delete
 docker-php-ext-configure gd --with-freetype --with-jpeg
 docker-php-ext-install -j "$(nproc)" gd
 
-
-git clone --depth 1 -b 3.0.2 "https://github.com/xdebug/xdebug" \
-  && cd xdebug \
-  && phpize \
-  && ./configure \
-  && make clean \
-  && make \
-  && make install \
-  && docker-php-ext-enable xdebug
-
-#docker-php-source extract \
-#    && curl -L -o /tmp/redis.tar.gz "https://github.com/phpredis/phpredis/archive/5.3.3.tar.gz" \
-#    && tar xfz /tmp/redis.tar.gz \
-#    && rm -r /tmp/redis.tar.gz \
-#    && mv phpredis-5.3.3 /usr/src/php/ext/redis \
-#    && docker-php-ext-install redis \
-#    && docker-php-source delete
+apk add --no-cache --virtual .pgsql-deps postgresql-dev; \
+	docker-php-ext-install -j$(nproc) pdo_pgsql; \
+	apk add --no-cache --virtual .pgsql-rundeps so:libpq.so.5; \
+	apk del .pgsql-deps
 
 docker-php-source extract \
     && apk add --no-cache --virtual .phpize-deps-configure $PHPIZE_DEPS \
@@ -85,26 +56,6 @@ docker-php-source extract \
     && docker-php-ext-enable apcu \
     && apk del .phpize-deps-configure \
     && docker-php-source delete
-
-#docker-php-source extract \
-#    && apk add --no-cache --virtual .cassandra-deps libressl-dev libuv-dev cassandra-cpp-driver-dev \
-#    && curl -L -o /tmp/cassandra.tar.gz "https://github.com/datastax/php-driver/archive/24d85d9f1d.tar.gz" \
-#    && mkdir /tmp/cassandra \
-#    && tar xfz /tmp/cassandra.tar.gz --strip 1 -C /tmp/cassandra \
-#    && rm -r /tmp/cassandra.tar.gz \
-#    && curl -L "https://github.com/datastax/php-driver/pull/135.patch" | patch -p1 -d /tmp/cassandra -i - \
-#    && mv /tmp/cassandra/ext /usr/src/php/ext/cassandra \
-#    && rm -rf /tmp/cassandra \
-#    && docker-php-ext-install cassandra \
-#    && apk del .cassandra-deps \
-#    && docker-php-source delete
-
-#AMQP
-docker-php-source extract \
-  && mkdir /usr/src/php/ext/amqp \
-  && curl -L https://github.com/php-amqp/php-amqp/archive/master.tar.gz | tar -xzC /usr/src/php/ext/amqp --strip-components=1 \
-  && docker-php-ext-install amqp \
-  && docker-php-source delete
 
 #Imagick
 mkdir /usr/local/src \
@@ -119,32 +70,8 @@ mkdir /usr/local/src \
   && rm -rf imagick \
   && docker-php-ext-enable imagick
 
-#XMLRPC
-mkdir /usr/local/src/xmlrpc \
-  && cd /usr/local/src/xmlrpc \
-  && curl -L https://pecl.php.net/get/xmlrpc-1.0.0RC1.tgz | tar -xzC /usr/local/src/xmlrpc --strip-components=1 \
-  && phpize \
-  && ./configure \
-  && make \
-  && make install \
-  && cd .. \
-  && rm -rf xmlrpc \
-  && docker-php-ext-enable xmlrpc
-
-#pecl install mongodb \
-#  && docker-php-ext-enable mongodb
-
-pecl install pcov \
-  && docker-php-ext-enable pcov
-
-git clone "https://github.com/php-memcached-dev/php-memcached.git" \
-    && cd php-memcached \
-    && phpize \
-    && ./configure --disable-memcached-sasl \
-    && make \
-    && make install \
-    && cd ../ && rm -rf php-memcached \
-    && docker-php-ext-enable memcached
+pecl install redis \
+  &&  docker-php-ext-enable redis
 
 { \
     echo 'opcache.enable=1'; \
@@ -170,4 +97,3 @@ git clone "https://github.com/php-memcached-dev/php-memcached.git" \
 } > /usr/local/etc/php/conf.d/apcu-recommended.ini
 
 echo "memory_limit=1G" > /usr/local/etc/php/conf.d/zz-conf.ini
-echo 'xdebug.mode=coverage' > /usr/local/etc/php/conf.d/20-xdebug.ini
