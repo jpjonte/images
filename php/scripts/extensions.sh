@@ -73,6 +73,9 @@ mkdir /usr/local/src \
 pecl install redis \
   &&  docker-php-ext-enable redis
 
+pecl install pcov \
+  && docker-php-ext-enable pcov
+
 { \
     echo 'opcache.enable=1'; \
     echo 'opcache.revalidate_freq=0'; \
