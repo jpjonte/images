@@ -1,12 +1,9 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-set -euo pipefail
-
-apk del --purge \
-  openssl-dev
+set -eu
 
 rm -rf /tmp/* \
-        /usr/includes/* \
-        /usr/share/man/* \
-        /var/cache/apk/* \
-        /var/tmp/*
+  /usr/includes/* \
+  /usr/share/man/* \
+  /var/cache/apk/* \
+  /var/tmp/*

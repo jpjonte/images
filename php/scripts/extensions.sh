@@ -1,32 +1,10 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-set -euo pipefail
+set -eu
 
-apk --update --no-cache add \
-  bzip2 \
-  bzip2-dev \
-  freetype-dev \
-  gmp-dev \
-  icu-dev \
-  imagemagick \
-  imagemagick-dev \
-  imap-dev \
-  krb5-dev \
-  libintl \
-  libjpeg-turbo-dev \
-  libmemcached-dev \
-  libpng-dev \
-  libxml2-dev \
-  libxslt-dev \
-  pcre-dev \
-  postgresql-dev \
-  zlib-dev \
-  libzip-dev \
-  libsodium-dev
-
-PHP_OPENSSL=yes docker-php-ext-configure imap --with-kerberos --with-imap-ssl
-docker-php-ext-install -j "$(nproc)" imap
-docker-php-ext-install -j "$(nproc)" exif \
+install-php-extensions @composer \
+  imap \
+  exif \
   pcntl \
   bcmath \
   bz2 \
@@ -40,41 +18,13 @@ docker-php-ext-install -j "$(nproc)" exif \
   soap \
   xsl \
   zip \
-  gmp
-docker-php-source delete
-docker-php-ext-configure gd --with-freetype --with-jpeg
-docker-php-ext-install -j "$(nproc)" gd
-
-apk add --no-cache --virtual .pgsql-deps postgresql-dev; \
-	docker-php-ext-install -j$(nproc) pdo_pgsql; \
-	apk add --no-cache --virtual .pgsql-rundeps so:libpq.so.5; \
-	apk del .pgsql-deps
-
-docker-php-source extract \
-    && apk add --no-cache --virtual .phpize-deps-configure $PHPIZE_DEPS \
-    && pecl install apcu \
-    && docker-php-ext-enable apcu \
-    && apk del .phpize-deps-configure \
-    && docker-php-source delete
-
-#Imagick
-mkdir /usr/local/src \
-  && cd /usr/local/src \
-  && git clone https://github.com/Imagick/imagick \
-  && cd imagick \
-  && phpize \
-  && ./configure \
-  && make \
-  && make install \
-  && cd .. \
-  && rm -rf imagick \
-  && docker-php-ext-enable imagick
-
-pecl install redis \
-  &&  docker-php-ext-enable redis
-
-pecl install pcov \
-  && docker-php-ext-enable pcov
+  gmp \
+  pdo_pgsql \
+  apcu \
+  imagick \
+  redis \
+  pcov \
+  gd
 
 { \
     echo 'opcache.enable=1'; \
