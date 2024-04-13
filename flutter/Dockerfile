@@ -1,10 +1,8 @@
-FROM plugfox/flutter:stable-android
+FROM ghcr.io/cirruslabs/flutter:stable
 
-RUN sdkmanager "--update" "--verbose" \
-    && sdkmanager "build-tools;33.0.2" "platform-tools" "platforms;android-33" "extras;android;m2repository" "extras;google;google_play_services" "extras;google;m2repository"
+RUN sdkmanager "--update" "--verbose"
 
-# TODO: remove repository once it reaches a stable version of alpine
-RUN apk add --update --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing lcov
+RUN apt-get update && apt-get install -y lcov
 
 RUN dart pub global activate cobertura
 RUN dart pub global activate junitreport
