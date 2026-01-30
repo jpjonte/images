@@ -45,6 +45,23 @@ build:php:8.3:
     - when: manual
       allow_failure: true
 
+build:php:8.5:
+  stage: build
+  variables:
+    NAMESPACE: ${BASE_NAMESPACE}/php
+    TAGS: "8.5"
+    DOCKERFILE: php/8.5/Dockerfile
+  script:
+    - scripts/build.sh
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_TAG != null'
+      changes:
+        - php/8.5/**/*
+        - php/scripts/**/*
+        - scripts/**/*
+    - when: manual
+      allow_failure: true
+
 build:flutter:
   stage: build
   variables:
