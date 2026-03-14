@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # yq (YAML processor)
 ARG YQ_VERSION=4.45.4
-RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
+ARG TARGETARCH
+RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TARGETARCH}" \
       -o /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 
@@ -48,14 +49,19 @@ RUN yes | sdkmanager --licenses > /dev/null 2>&1 \
       "ndk;28.2.13676358"
 
 # Gradle cache warmup — build a throwaway project to download Gradle & deps
-RUN flutter create /tmp/_warmup \
-    && cd /tmp/_warmup \
-    && flutter build apk --debug \
-    && rm -rf /tmp/_warmup
+# Skipped on arm64: the Android SDK ships x86_64-only binaries (aapt2, cmake, etc.)
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      flutter create /tmp/_warmup \
+      && cd /tmp/_warmup \
+      && flutter build apk --debug \
+      && rm -rf /tmp/_warmup; \
+    fi
 
 # glab CLI
 ARG GLAB_VERSION=1.82.0
-RUN curl -fsSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_amd64.deb" -o /tmp/glab.deb \
+ARG TARGETARCH
+RUN curl -fsSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${TARGETARCH}.deb" -o /tmp/glab.deb \
     && dpkg -i /tmp/glab.deb \
     && rm /tmp/glab.deb
 

@@ -71,7 +71,7 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
 
-  # ── Flutter ──────────────────────────────────────────────────────
+  # ── Flutter (per-platform build) ────────────────────────────────
   build-flutter:
     needs: [changes, check-flutter]
     if: |
@@ -80,32 +80,82 @@ jobs:
         (github.event_name == 'schedule' && needs.check-flutter.outputs.build == 'true') ||
         github.event_name == 'workflow_dispatch'
       )
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Determine version
+        id: version
+        run: |
+          VERSION="${{ needs.check-flutter.outputs.version || inputs.flutter_version }}"
+          echo "version=${VERSION:-stable}" >> "$GITHUB_OUTPUT"
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: flutter/Dockerfile
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            FLUTTER_VERSION=${{ steps.version.outputs.version }}
+          outputs: type=image,name=${{ env.NAMESPACE }}/flutter,push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-digest-${{ matrix.runner }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Flutter (merge multi-arch manifest) ────────────────────────
+  merge-flutter:
+    needs: [build-flutter]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: flutter-digest-*
+          merge-multiple: true
+          path: /tmp/digests
       - name: Determine tags
         id: tags
         run: |
           TAGS="${{ env.NAMESPACE }}/flutter:stable"
-          VERSION="${{ needs.check-flutter.outputs.version || inputs.flutter_version }}"
-          if [[ -n "$VERSION" ]]; then
+          VERSION="${{ needs.build-flutter.outputs.version }}"
+          if [[ -n "$VERSION" && "$VERSION" != "stable" ]]; then
             TAGS="${TAGS},${{ env.NAMESPACE }}/flutter:${VERSION}"
           fi
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION:-stable}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: flutter/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          build-args: |
-            FLUTTER_VERSION=${{ steps.tags.outputs.version }}
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          TAGS=$(echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n' | sed 's/^/-t /' | tr '\n' ' ')
+          docker buildx imagetools create $TAGS \
+            $(printf '${{ env.NAMESPACE }}/flutter@sha256:%s ' *)
 
   # ── PHP ──────────────────────────────────────────────────────────
   build-php:
