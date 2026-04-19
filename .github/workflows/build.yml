@@ -157,7 +157,7 @@ jobs:
           docker buildx imagetools create $TAGS \
             $(printf '${{ env.NAMESPACE }}/flutter@sha256:%s ' *)
 
-  # ── PHP ──────────────────────────────────────────────────────────
+  # ── PHP (per-platform build) ────────────────────────────────────
   build-php:
     needs: [changes]
     if: |
@@ -165,26 +165,99 @@ jobs:
         (github.event_name == 'push' && (needs.changes.outputs.php-8_4 == 'true' || needs.changes.outputs.php-8_5 == 'true')) ||
         github.event_name == 'workflow_dispatch'
       )
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         version: ['8.4', '8.5']
+        platform:
+          - linux/amd64
+          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
         exclude:
           - version: ${{ github.event_name == 'push' && needs.changes.outputs.php-8_4 != 'true' && '8.4' || 'never' }}
           - version: ${{ github.event_name == 'push' && needs.changes.outputs.php-8_5 != 'true' && '8.5' || 'never' }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: php/${{ matrix.version }}/Dockerfile
-          push: true
-          tags: ${{ env.NAMESPACE }}/php:${{ matrix.version }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.NAMESPACE }}/php,push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - name: Sanitize platform for artifact name
+        id: sanitize
+        run: echo "suffix=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: php-${{ matrix.version }}-digest-${{ steps.sanitize.outputs.suffix }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── PHP (merge multi-arch manifest) ─────────────────────────────
+  merge-php:
+    needs: [build-php]
+    if: |
+      always() && needs.build-php.result == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['8.4', '8.5']
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: php-${{ matrix.version }}-digest-*
+          merge-multiple: true
+          path: /tmp/digests
+      - name: Validate digest count
+        run: |
+          digest_count=$(find /tmp/digests -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$digest_count" -eq 0 ]; then
+            echo "No digests for PHP ${{ matrix.version }} — build-php was skipped by change detection."
+            exit 0
+          fi
+          if [ "$digest_count" -lt 2 ]; then
+            echo "Only $digest_count digest for PHP ${{ matrix.version }} — need at least 2 for multi-arch." >&2
+            echo "Refusing to publish a single-arch manifest under a multi-arch tag." >&2
+            exit 1
+          fi
+          echo "has_digests=true" >> "$GITHUB_ENV"
+      - name: Create multi-arch manifest
+        if: env.has_digests == 'true'
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.NAMESPACE }}/php:${{ matrix.version }} \
+            $(printf '${{ env.NAMESPACE }}/php@sha256:%s ' *)
+      - name: Inspect published manifest
+        if: env.has_digests == 'true'
+        run: |
+          docker buildx imagetools inspect ${{ env.NAMESPACE }}/php:${{ matrix.version }}
 
   # ── kubectl ──────────────────────────────────────────────────────
   build-kubectl:
