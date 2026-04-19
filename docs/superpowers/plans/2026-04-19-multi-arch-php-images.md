@@ -229,6 +229,9 @@ Edit `.github/workflows/build.yml`. Replace the entire existing `build-php` job 
       fail-fast: false
       matrix:
         version: ['8.4', '8.5']
+        platform:
+          - linux/amd64
+          - linux/arm64
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
@@ -270,8 +273,10 @@ Edit `.github/workflows/build.yml`. Replace the entire existing `build-php` job 
           retention-days: 1
 ```
 
+> **Note on matrix semantics:** `platform` must be declared as a top-level matrix key so it cross-products with `version`. If you try to introduce it solely via `include:`, the entries become standalone rows instead of expanding existing rows (GHA `include:` only augments existing rows when its keys match the top-level matrix).
+
 **Notes on the diff:**
-- `strategy.matrix` combines `version` (list) with an `include` that adds both platform rows for every version. This produces the `(version × platform)` cross-product. The `exclude` rules from the old job are preserved — they still act on `version` alone, which is the behavior we want (skipping 8.4 when only 8.5 changed skips *both* its platform builds).
+- `strategy.matrix` declares both `version` and `platform` as top-level keys, producing a `(version × platform)` cross-product of 4 rows. The `include` entries then match on `platform` to inject the corresponding `runner` field into each row. The `exclude` rules are preserved — they still act on `version` alone, which is the behavior we want (skipping 8.4 when only 8.5 changed skips *both* its platform builds).
 - `fail-fast: false` — if arm64 flakes, we still want the amd64 digest to exist for the merge. Flutter's version doesn't set this explicitly; adding it here is safer for the wider cross-product.
 - `docker/setup-buildx-action@v3` is now required because push-by-digest needs buildx.
 - The artifact name uses `linux-amd64` / `linux-arm64` (slashes sanitized) to keep artifacts distinct per (version, platform) and to match what the merge job downloads.

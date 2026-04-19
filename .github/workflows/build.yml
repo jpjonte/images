@@ -169,6 +169,9 @@ jobs:
       fail-fast: false
       matrix:
         version: ['8.4', '8.5']
+        platform:
+          - linux/amd64
+          - linux/arm64
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
