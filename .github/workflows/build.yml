@@ -212,6 +212,47 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  # ── PHP (merge multi-arch manifest) ─────────────────────────────
+  merge-php:
+    needs: [build-php]
+    if: |
+      always() && needs.build-php.result == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['8.4', '8.5']
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: php-${{ matrix.version }}-digest-*
+          merge-multiple: true
+          path: /tmp/digests
+      - name: Bail if no digests were produced for this version
+        run: |
+          if ! ls /tmp/digests/* >/dev/null 2>&1; then
+            echo "No digests for PHP ${{ matrix.version }} — build-php was skipped by change detection."
+            exit 0
+          fi
+          echo "has_digests=true" >> "$GITHUB_ENV"
+      - name: Create multi-arch manifest
+        if: env.has_digests == 'true'
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.NAMESPACE }}/php:${{ matrix.version }} \
+            $(printf '${{ env.NAMESPACE }}/php@sha256:%s ' *)
+      - name: Inspect published manifest
+        if: env.has_digests == 'true'
+        run: |
+          docker buildx imagetools inspect ${{ env.NAMESPACE }}/php:${{ matrix.version }}
+
   # ── kubectl ──────────────────────────────────────────────────────
   build-kubectl:
     needs: [changes]
