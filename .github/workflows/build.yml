@@ -234,11 +234,17 @@ jobs:
           pattern: php-${{ matrix.version }}-digest-*
           merge-multiple: true
           path: /tmp/digests
-      - name: Bail if no digests were produced for this version
+      - name: Validate digest count
         run: |
-          if ! ls /tmp/digests/* >/dev/null 2>&1; then
+          digest_count=$(find /tmp/digests -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$digest_count" -eq 0 ]; then
             echo "No digests for PHP ${{ matrix.version }} — build-php was skipped by change detection."
             exit 0
+          fi
+          if [ "$digest_count" -lt 2 ]; then
+            echo "Only $digest_count digest for PHP ${{ matrix.version }} — need at least 2 for multi-arch." >&2
+            echo "Refusing to publish a single-arch manifest under a multi-arch tag." >&2
+            exit 1
           fi
           echo "has_digests=true" >> "$GITHUB_ENV"
       - name: Create multi-arch manifest

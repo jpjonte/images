@@ -331,11 +331,17 @@ Edit `.github/workflows/build.yml`. Insert this block immediately after the `bui
           pattern: php-${{ matrix.version }}-digest-*
           merge-multiple: true
           path: /tmp/digests
-      - name: Bail if no digests were produced for this version
+      - name: Validate digest count
         run: |
-          if ! ls /tmp/digests/* >/dev/null 2>&1; then
+          digest_count=$(find /tmp/digests -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$digest_count" -eq 0 ]; then
             echo "No digests for PHP ${{ matrix.version }} — build-php was skipped by change detection."
             exit 0
+          fi
+          if [ "$digest_count" -lt 2 ]; then
+            echo "Only $digest_count digest for PHP ${{ matrix.version }} — need at least 2 for multi-arch." >&2
+            echo "Refusing to publish a single-arch manifest under a multi-arch tag." >&2
+            exit 1
           fi
           echo "has_digests=true" >> "$GITHUB_ENV"
       - name: Create multi-arch manifest
@@ -352,8 +358,8 @@ Edit `.github/workflows/build.yml`. Insert this block immediately after the `bui
 ```
 
 **Notes on the diff:**
-- `needs: [build-php]` — waits for every matrix cell of `build-php` to finish. With `fail-fast: false` and `needs.build-php.result == 'success'`, we only merge when *all* platform builds for *some* version succeeded. If one version's builds were excluded and the other's succeeded, `build-php.result` is still `success` overall — the "Bail if no digests" step handles the per-version early-out.
-- The "Bail if no digests" step exists because `download-artifact` with `pattern: php-X.Y-digest-*` is non-fatal if nothing matches — it just produces an empty directory. Without the bail, `docker buildx imagetools create` would be called with no digests and fail confusingly.
+- `needs: [build-php]` — waits for every matrix cell of `build-php` to finish. With `fail-fast: false` and `needs.build-php.result == 'success'`, we only merge when *all* platform builds for *some* version succeeded. If one version's builds were excluded and the other's succeeded, `build-php.result` is still `success` overall — the "Validate digest count" step handles the per-version early-out.
+- The "Validate digest count" step exists because `download-artifact` with `pattern: php-X.Y-digest-*` is non-fatal if nothing matches — it just produces an empty directory. It distinguishes three cases: zero digests (version was fully excluded, skip cleanly), one digest (unexpected partial result, fail loudly to prevent silent single-arch publish), two or more digests (proceed to merge).
 - `Inspect published manifest` step is a belt-and-braces sanity check in CI log: you see the final manifest list right there.
 
 - [ ] **Step 2: Verify YAML parses**
