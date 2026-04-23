@@ -27,6 +27,7 @@ jobs:
       flutter: ${{ steps.filter.outputs.flutter }}
       php-8_4: ${{ steps.filter.outputs.php-8_4 }}
       php-8_5: ${{ steps.filter.outputs.php-8_5 }}
+      frankenphp-8_5: ${{ steps.filter.outputs.frankenphp-8_5 }}
       kubectl: ${{ steps.filter.outputs.kubectl }}
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +42,9 @@ jobs:
               - 'php/scripts/**'
             php-8_5:
               - 'php/8.5/**'
+              - 'php/scripts/**'
+            frankenphp-8_5:
+              - 'frankenphp/8.5/**'
               - 'php/scripts/**'
             kubectl:
               - 'kubectl/**'
@@ -258,6 +262,108 @@ jobs:
         if: env.has_digests == 'true'
         run: |
           docker buildx imagetools inspect ${{ env.NAMESPACE }}/php:${{ matrix.version }}
+
+    # ── FrankenPHP (per-platform build) ────────────────────────────────────
+  build-frankenphp:
+    needs: [changes]
+    if: |
+      always() && (
+        (github.event_name == 'push' && (needs.changes.outputs.frankenphp-8_5 == 'true')) ||
+        github.event_name == 'workflow_dispatch'
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [8.5']
+        platform:
+          - linux/amd64
+          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+        exclude:
+          - version: ${{ github.event_name == 'push' && needs.changes.outputs.frankenphp-8_4 != 'true' && '8.4' || 'never' }}
+          - version: ${{ github.event_name == 'push' && needs.changes.outputs.frankenphp-8_5 != 'true' && '8.5' || 'never' }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frankenphp/${{ matrix.version }}/Dockerfile
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.NAMESPACE }}/frankenphp,push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - name: Sanitize platform for artifact name
+        id: sanitize
+        run: echo "suffix=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frankenphp-${{ matrix.version }}-digest-${{ steps.sanitize.outputs.suffix }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── FrankenPHP (merge multi-arch manifest) ─────────────────────────────
+  merge-frankenphp:
+    needs: [build-frankenphp]
+    if: |
+      always() && needs.build-frankenphp.result == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['8.5']
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frankenphp-${{ matrix.version }}-digest-*
+          merge-multiple: true
+          path: /tmp/digests
+      - name: Validate digest count
+        run: |
+          digest_count=$(find /tmp/digests -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$digest_count" -eq 0 ]; then
+            echo "No digests for FrankenPHP ${{ matrix.version }} — build-frankenphp was skipped by change detection."
+            exit 0
+          fi
+          if [ "$digest_count" -lt 2 ]; then
+            echo "Only $digest_count digest for FrankenPHP ${{ matrix.version }} — need at least 2 for multi-arch." >&2
+            echo "Refusing to publish a single-arch manifest under a multi-arch tag." >&2
+            exit 1
+          fi
+          echo "has_digests=true" >> "$GITHUB_ENV"
+      - name: Create multi-arch manifest
+        if: env.has_digests == 'true'
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.NAMESPACE }}/frankenphp:${{ matrix.version }} \
+            $(printf '${{ env.NAMESPACE }}/frankenphp@sha256:%s ' *)
+      - name: Inspect published manifest
+        if: env.has_digests == 'true'
+        run: |
+          docker buildx imagetools inspect ${{ env.NAMESPACE }}/frankenphp:${{ matrix.version }}
 
   # ── kubectl ──────────────────────────────────────────────────────
   build-kubectl:
