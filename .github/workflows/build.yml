@@ -274,7 +274,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [8.5']
+        version: ['8.5']
         platform:
           - linux/amd64
           - linux/arm64
