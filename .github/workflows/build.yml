@@ -132,6 +132,8 @@ jobs:
   # ── Flutter (merge multi-arch manifest) ────────────────────────
   merge-flutter:
     needs: [build-flutter]
+    if: |
+      always() && needs.build-flutter.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
