@@ -75,7 +75,7 @@ jobs:
         env:
           DOCKER_CLI_EXPERIMENTAL: enabled
 
-  # ── Flutter (per-platform build) ────────────────────────────────
+  # ── Flutter (per-platform, per-target build) ────────────────────
   build-flutter:
     needs: [changes, check-flutter]
     if: |
@@ -85,7 +85,16 @@ jobs:
         github.event_name == 'workflow_dispatch'
       )
     strategy:
+      fail-fast: false
       matrix:
+        target:
+          - { name: base,        repo: flutter-base }
+          - { name: base-ci,     repo: flutter-base-ci }
+          - { name: android,     repo: flutter }
+          - { name: android-ci,  repo: flutter-android-ci }
+        platform:
+          - linux/amd64
+          - linux/arm64
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
@@ -111,16 +120,20 @@ jobs:
               | jq -r '.current_release.stable as $h | .releases[] | select(.hash==$h) | .version')
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Sanitize platform for artifact name
+        id: sanitize
+        run: echo "suffix=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: flutter/Dockerfile
+          target: ${{ matrix.target.name }}
           platforms: ${{ matrix.platform }}
           build-args: |
             FLUTTER_VERSION=${{ steps.version.outputs.version }}
-          outputs: type=image,name=${{ env.NAMESPACE }}/flutter,push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.NAMESPACE }}/${{ matrix.target.repo }},push-by-digest=true,name-canonical=true,push=true
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
@@ -128,17 +141,25 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
       - uses: actions/upload-artifact@v4
         with:
-          name: flutter-digest-${{ matrix.runner }}
+          name: flutter-${{ matrix.target.name }}-digest-${{ steps.sanitize.outputs.suffix }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
 
-  # ── Flutter (merge multi-arch manifest) ────────────────────────
+  # ── Flutter (merge multi-arch manifests, one per target) ────────
   merge-flutter:
     needs: [build-flutter]
     if: |
       always() && needs.build-flutter.result == 'success'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: base,        repo: flutter-base }
+          - { name: base-ci,     repo: flutter-base-ci }
+          - { name: android,     repo: flutter }
+          - { name: android-ci,  repo: flutter-android-ci }
     steps:
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -148,20 +169,23 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/download-artifact@v4
         with:
-          pattern: flutter-digest-*
+          pattern: flutter-${{ matrix.target.name }}-digest-*
           merge-multiple: true
           path: /tmp/digests
       - name: Determine tags
         id: tags
         run: |
           VERSION="${{ needs.build-flutter.outputs.version }}"
-          echo "tags=${{ env.NAMESPACE }}/flutter:stable,${{ env.NAMESPACE }}/flutter:${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tags=${{ env.NAMESPACE }}/${{ matrix.target.repo }}:stable,${{ env.NAMESPACE }}/${{ matrix.target.repo }}:${VERSION}" >> "$GITHUB_OUTPUT"
       - name: Create multi-arch manifest
         working-directory: /tmp/digests
         run: |
           TAGS=$(echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n' | sed 's/^/-t /' | tr '\n' ' ')
           docker buildx imagetools create $TAGS \
-            $(printf '${{ env.NAMESPACE }}/flutter@sha256:%s ' *)
+            $(printf '${{ env.NAMESPACE }}/${{ matrix.target.repo }}@sha256:%s ' *)
+      - name: Inspect published manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.NAMESPACE }}/${{ matrix.target.repo }}:stable
 
   # ── PHP (per-platform build) ────────────────────────────────────
   build-php:
