@@ -116,3 +116,20 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     fi
 
 RUN flutter doctor
+
+# =========================================================================
+# Stage: android-ci
+# android + shared CI tooling. Uses the same install script as base-ci
+# so the tool list lives in exactly one place.
+# =========================================================================
+FROM android AS android-ci
+
+ARG GLAB_VERSION=1.82.0
+ARG TARGETARCH
+
+COPY flutter/install-ci-tools.sh /tmp/install-ci-tools.sh
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    GLAB_VERSION="${GLAB_VERSION}" TARGETARCH="${TARGETARCH}" \
+      /tmp/install-ci-tools.sh \
+    && rm /tmp/install-ci-tools.sh
