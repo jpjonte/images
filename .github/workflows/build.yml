@@ -106,7 +106,11 @@ jobs:
         id: version
         run: |
           VERSION="${{ needs.check-flutter.outputs.version || inputs.flutter_version }}"
-          echo "version=${VERSION:-stable}" >> "$GITHUB_OUTPUT"
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(curl -s https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json \
+              | jq -r '.current_release.stable as $h | .releases[] | select(.hash==$h) | .version')
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -150,12 +154,8 @@ jobs:
       - name: Determine tags
         id: tags
         run: |
-          TAGS="${{ env.NAMESPACE }}/flutter:stable"
           VERSION="${{ needs.build-flutter.outputs.version }}"
-          if [[ -n "$VERSION" && "$VERSION" != "stable" ]]; then
-            TAGS="${TAGS},${{ env.NAMESPACE }}/flutter:${VERSION}"
-          fi
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "tags=${{ env.NAMESPACE }}/flutter:stable,${{ env.NAMESPACE }}/flutter:${VERSION}" >> "$GITHUB_OUTPUT"
       - name: Create multi-arch manifest
         working-directory: /tmp/digests
         run: |
