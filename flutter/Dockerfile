@@ -2,7 +2,7 @@
 
 # =========================================================================
 # Stage: base
-# Debian-slim + Flutter SDK only. No Android, no .git, no CI tools.
+# Debian-slim + Flutter SDK only. No Android, no CI tools.
 # =========================================================================
 FROM debian:bookworm-slim AS base
 
