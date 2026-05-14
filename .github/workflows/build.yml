@@ -88,9 +88,9 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { name: base,        repo: flutter-base }
-          - { name: base-ci,     repo: flutter-base-ci }
-          - { name: android,     repo: flutter }
+          - { name: base,        repo: flutter }
+          - { name: base-ci,     repo: flutter-ci }
+          - { name: android,     repo: flutter-android }
           - { name: android-ci,  repo: flutter-android-ci }
         platform:
           - linux/amd64
@@ -156,9 +156,9 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { name: base,        repo: flutter-base }
-          - { name: base-ci,     repo: flutter-base-ci }
-          - { name: android,     repo: flutter }
+          - { name: base,        repo: flutter }
+          - { name: base-ci,     repo: flutter-ci }
+          - { name: android,     repo: flutter-android }
           - { name: android-ci,  repo: flutter-android-ci }
     steps:
       - uses: docker/setup-buildx-action@v3
