@@ -8,14 +8,14 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 
 RUN chmod +x /usr/local/bin/install-php-extensions
 
-RUN chmod +x /tmp/*.sh \
+RUN apk upgrade --no-cache \
+  && chmod +x /tmp/*.sh \
   && adduser -D php \
   && mkdir -p /var/www/html \
   && sh ./packages.sh \
   && sh ./extensions.sh \
   && rm -rf ~/.composer/cache/* \
   && chown -R php:php /var/www /home/php \
-  && echo "php  ALL = ( ALL ) NOPASSWD: ALL" >> /etc/sudoers \
   && sh ./cleanup.sh
 
 WORKDIR /srv/app
