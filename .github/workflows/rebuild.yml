@@ -1,0 +1,27 @@
+name: Weekly base rebuild
+
+# Rebuilds the php-family base images weekly so OS security patches (via the
+# Dockerfiles' `apk upgrade`) land without waiting for a code change. A single
+# schedule lives here, so no cron-string disambiguation is needed — contrast
+# build.yml, which owns the daily flutter check.
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'   # Mondays 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  php:
+    uses: ./.github/workflows/_php-image.yml
+    with:
+      name: php
+      version: '8.5'
+
+  frankenphp:
+    uses: ./.github/workflows/_php-image.yml
+    with:
+      name: frankenphp
+      version: '8.5'
