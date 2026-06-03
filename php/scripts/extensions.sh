@@ -3,25 +3,16 @@
 set -eu
 
 install-php-extensions @composer \
-  imap \
   exif \
   pcntl \
   bcmath \
-  bz2 \
-  calendar \
   intl \
-  mysqli \
   opcache \
-  pdo_mysql \
   pdo_pgsql \
   pgsql \
-  soap \
-  xsl \
   zip \
   gmp \
-  pdo_pgsql \
   apcu \
-  imagick \
   redis \
   pcov \
   gd
