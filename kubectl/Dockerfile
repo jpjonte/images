@@ -1,4 +1,4 @@
-FROM bitnami/kubectl:latest
+FROM bitnami/kubectl:latest@sha256:172d4889e49c3b66d91a3a5afc289448fa1407dda782b9817ccfd8d1b064660b
 
 USER root
 

@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 # =========================================================================
 # Stage: base
 # Debian-slim + Flutter SDK only. No Android, no CI tools.
 # =========================================================================
-FROM debian:bookworm-slim AS base
+FROM debian:bookworm-slim@sha256:0104b334637a5f19aa9c983a91b54c89887c0984081f2068983107a6f6c21eeb AS base
 
 ARG FLUTTER_VERSION=stable
 ARG YQ_VERSION=4.45.4
