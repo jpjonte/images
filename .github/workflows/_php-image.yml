@@ -63,7 +63,7 @@ jobs:
       - name: Sanitize platform for artifact name
         id: sanitize
         run: echo "suffix=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.name }}-${{ inputs.version }}-digest-${{ steps.sanitize.outputs.suffix }}
           path: /tmp/digests/*
@@ -81,7 +81,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: ${{ inputs.name }}-${{ inputs.version }}-digest-*
           merge-multiple: true
