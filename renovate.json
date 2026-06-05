@@ -3,5 +3,14 @@
   "extends": [
     "config:recommended",
     "docker:pinDigests"
+  ],
+  "packageRules": [
+    {
+      "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes :stable/:8.5 on success), so let Renovate group, schedule, and merge them.",
+      "matchUpdateTypes": ["digest", "pinDigest"],
+      "groupName": "docker base image digests",
+      "schedule": ["before 6am on monday"],
+      "automerge": true
+    }
   ]
 }
