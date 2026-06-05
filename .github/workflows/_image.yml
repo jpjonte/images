@@ -1,22 +1,21 @@
-name: Build a php-family image
+name: Build a Docker image (multi-arch)
 
-# Reusable workflow: builds one php-family image (php or frankenphp) multi-arch by
-# digest and publishes the merged manifest. Callers decide WHEN to run it
-# (build.yml on push, rebuild.yml on a weekly schedule), so this workflow itself
-# carries no event/scheduling logic.
+# Reusable workflow: builds one image multi-arch (amd64+arm64) by digest and
+# publishes the merged manifest. Callers decide WHEN to run it (build.yml on
+# push, rebuild.yml on a weekly schedule), so this workflow itself carries no
+# event/scheduling logic.
 
 on:
   workflow_call:
     inputs:
       name:
-        description: 'Image name under the namespace (e.g. php or frankenphp). Also the source directory.'
+        description: 'Image name under the namespace and the source directory (e.g. php, frankenphp, forgejo-runner).'
         required: true
         type: string
       version:
-        description: 'PHP version / image tag and source subdirectory (e.g. 8.5).'
-        required: false
+        description: 'Image tag and source subdirectory (e.g. 8.5, 12). Built from <name>/<version>/Dockerfile.'
+        required: true
         type: string
-        default: '8.5'
 
 permissions:
   packages: write

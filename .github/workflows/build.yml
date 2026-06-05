@@ -27,6 +27,7 @@ jobs:
       flutter: ${{ steps.filter.outputs.flutter }}
       php-8_5: ${{ steps.filter.outputs.php-8_5 }}
       frankenphp-8_5: ${{ steps.filter.outputs.frankenphp-8_5 }}
+      forgejo-runner-12: ${{ steps.filter.outputs.forgejo-runner-12 }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v4
@@ -41,6 +42,8 @@ jobs:
             frankenphp-8_5:
               - 'frankenphp/8.5/**'
               - 'php/scripts/**'
+            forgejo-runner-12:
+              - 'forgejo-runner/12/**'
 
   # ── Check for new Flutter stable version (schedule only) ─────────
   check-flutter:
@@ -183,7 +186,7 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.NAMESPACE }}/flutter:stable${{ matrix.target.suffix }}
 
-  # ── PHP and FrankenPHP (via the reusable _php-image workflow) ────
+  # ── PHP and FrankenPHP (via the reusable _image workflow) ────
   # On push, each is gated independently by change detection; workflow_dispatch
   # rebuilds both. The weekly OS-patch rebuild lives in rebuild.yml.
   php:
@@ -193,7 +196,7 @@ jobs:
         (github.event_name == 'push' && needs.changes.outputs.php-8_5 == 'true') ||
         github.event_name == 'workflow_dispatch'
       )
-    uses: ./.github/workflows/_php-image.yml
+    uses: ./.github/workflows/_image.yml
     with:
       name: php
       version: '8.5'
@@ -205,7 +208,20 @@ jobs:
         (github.event_name == 'push' && needs.changes.outputs.frankenphp-8_5 == 'true') ||
         github.event_name == 'workflow_dispatch'
       )
-    uses: ./.github/workflows/_php-image.yml
+    uses: ./.github/workflows/_image.yml
     with:
       name: frankenphp
       version: '8.5'
+
+  # Built by the generic _image.yml workflow (name + version → <name>/<version>/Dockerfile).
+  forgejo-runner:
+    needs: [changes]
+    if: |
+      always() && (
+        (github.event_name == 'push' && needs.changes.outputs.forgejo-runner-12 == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: forgejo-runner
+      version: '12'
