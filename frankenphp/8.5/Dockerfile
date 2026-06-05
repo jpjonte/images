@@ -18,4 +18,14 @@ RUN apk upgrade --no-cache \
   && chown -R php:php /var/www /home/php \
   && sh ./cleanup.sh
 
+# The upstream image sets cap_net_bind_service=ep on the FrankenPHP binary so it
+# can bind :80/:443 as non-root. The *effective* bit makes it "capability-dumb":
+# under a hardened securityContext that empties the capability bounding set
+# (capabilities.drop: [ALL]), the kernel can no longer grant that effective cap
+# and refuses the exec with EPERM ("frankenphp: Operation not permitted").
+# Consumers run behind a Service/Ingress on an unprivileged port (:8080), so the
+# capability is unnecessary — strip it to keep the binary exec-able under
+# drop-ALL. See https://git.jpj.dev/bud/pantry/-/issues/309.
+RUN setcap -r /usr/local/bin/frankenphp
+
 WORKDIR /srv/app
