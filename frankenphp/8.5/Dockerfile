@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1-php8.5-alpine@sha256:7d92f9b2674d6a07a73e39ea771530e3bb2386a88c3b37b6eff00d3fbc02655e
+FROM dunglas/frankenphp:1-php8.5-alpine@sha256:75b884be47766f1bd5234723ce8dced53176431117221bc0dde8d130163d34d4
 
 WORKDIR /tmp
 
