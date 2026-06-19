@@ -1,5 +1,13 @@
 # Renovate runner with Flutter — design
 
+> **SUPERSEDED (2026-06-19).** Built on a wrong premise — that Renovate's containerbase
+> has no Flutter tool. It does (`containerbase/flutter-prebuild`, incl. 3.44.x), so the
+> stock runner already installs Flutter and refreshes `pubspec.lock` given a
+> `GITHUB_COM_TOKEN` (which the cluster already has). The custom image was unnecessary and
+> has been removed; no cutover ever happened. `share_plus 13`'s missing lockfile was just an
+> unresolvable solve, not a blind runner. Kept for the record — see the `renovate-flutter-runner`
+> memory and the SDD progress ledger.
+
 **Date:** 2026-06-19
 **Status:** Approved, pending implementation
 **Repos touched:** `docker` (image + pipeline), `argocd` (deploy), `bud/life-tracker` (cleanup)
