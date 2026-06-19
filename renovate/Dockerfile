@@ -5,6 +5,9 @@
 # pubspec.lock; containerbase has no dart/flutter tool, so we add it here and
 # leave binarySource at its default (install) — that keeps containerbase
 # auto-installing PHP/Composer/etc. for the other managed repos.
+#
+# RENOVATE_VERSION is required (no default): CI passes the upstream Renovate
+# release tag, and the published image is tagged to match it.
 ARG RENOVATE_VERSION
 ARG FLUTTER_VERSION=3.44.1
 FROM ghcr.io/renovatebot/renovate:${RENOVATE_VERSION}
@@ -15,7 +18,8 @@ ARG FLUTTER_VERSION
 USER root
 
 # Flutter's first-run Dart SDK bootstrap (bin/internal/update_dart_sdk.sh) needs
-# curl + unzip; git + ca-certificates are already present but asserted for safety.
+# curl + unzip (xz-utils for .tar.xz artifacts); git + ca-certificates are
+# already present but asserted for safety.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        ca-certificates curl git unzip xz-utils \
