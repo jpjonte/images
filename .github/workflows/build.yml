@@ -28,6 +28,7 @@ jobs:
       php-8_5: ${{ steps.filter.outputs.php-8_5 }}
       frankenphp-8_5: ${{ steps.filter.outputs.frankenphp-8_5 }}
       forgejo-runner-12: ${{ steps.filter.outputs.forgejo-runner-12 }}
+      renovate: ${{ steps.filter.outputs.renovate }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -44,6 +45,8 @@ jobs:
               - 'php/scripts/**'
             forgejo-runner-12:
               - 'forgejo-runner/12/**'
+            renovate:
+              - 'renovate/**'
 
   # ── Check for new Flutter stable version (schedule only) ─────────
   check-flutter:
@@ -66,6 +69,32 @@ jobs:
             echo "build=false" >> "$GITHUB_OUTPUT"
           else
             echo "New Flutter version: $VERSION"
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          DOCKER_CLI_EXPERIMENTAL: enabled
+
+  # ── Check for new Renovate version (schedule only) ───────────────
+  check-renovate:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Check latest Renovate release
+        id: check
+        run: |
+          VERSION=$(curl -fsSL https://api.github.com/repos/renovatebot/renovate/releases/latest \
+            | jq -r '.tag_name')
+          echo "Latest Renovate version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if docker manifest inspect ${{ env.NAMESPACE }}/renovate:$VERSION > /dev/null 2>&1; then
+            echo "Renovate $VERSION already exists in GHCR"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New Renovate version: $VERSION"
             echo "build=true" >> "$GITHUB_OUTPUT"
           fi
         env:
@@ -185,6 +214,111 @@ jobs:
       - name: Inspect published manifest
         run: |
           docker buildx imagetools inspect ${{ env.NAMESPACE }}/flutter:stable${{ matrix.target.suffix }}
+
+  # ── Renovate + Flutter (per-platform build) ─────────────────────
+  build-renovate:
+    needs: [changes, check-renovate]
+    if: |
+      always() && (
+        (github.event_name == 'push' && needs.changes.outputs.renovate == 'true') ||
+        (github.event_name == 'schedule' && needs.check-renovate.outputs.build == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Determine Renovate version
+        id: version
+        run: |
+          VERSION="${{ needs.check-renovate.outputs.version }}"
+          if [[ -z "$VERSION" ]]; then
+            VERSION=$(curl -fsSL https://api.github.com/repos/renovatebot/renovate/releases/latest \
+              | jq -r '.tag_name')
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Sanitize platform for artifact name
+        id: sanitize
+        run: echo "suffix=$(echo '${{ matrix.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: renovate/Dockerfile
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            RENOVATE_VERSION=${{ steps.version.outputs.version }}
+            FLUTTER_VERSION=3.44.1
+          outputs: type=image,name=${{ env.NAMESPACE }}/renovate,push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: renovate-digest-${{ steps.sanitize.outputs.suffix }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Renovate (merge multi-arch manifest) ────────────────────────
+  merge-renovate:
+    needs: [build-renovate]
+    if: always() && needs.build-renovate.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: renovate-digest-*
+          merge-multiple: true
+          path: /tmp/digests
+      - name: Validate digest count
+        run: |
+          digest_count=$(find /tmp/digests -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$digest_count" -lt 2 ]; then
+            echo "Only $digest_count digest(s) for renovate — need at least 2 for multi-arch." >&2
+            exit 1
+          fi
+      - name: Determine tags
+        id: tags
+        run: |
+          VERSION="${{ needs.build-renovate.outputs.version }}"
+          echo "tags=${{ env.NAMESPACE }}/renovate:latest,${{ env.NAMESPACE }}/renovate:${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Create multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          TAGS=$(echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n' | sed 's/^/-t /' | tr '\n' ' ')
+          docker buildx imagetools create $TAGS \
+            $(printf '${{ env.NAMESPACE }}/renovate@sha256:%s ' *)
+      - name: Inspect published manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.NAMESPACE }}/renovate:latest
 
   # ── PHP and FrankenPHP (via the reusable _image workflow) ────
   # On push, each is gated independently by change detection; workflow_dispatch
