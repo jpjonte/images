@@ -85,8 +85,14 @@ jobs:
       - name: Check latest Renovate release
         id: check
         run: |
-          VERSION=$(curl -fsSL https://api.github.com/repos/renovatebot/renovate/releases/latest \
-            | jq -r '.tag_name')
+          # npm registry, not the GitHub API: api.github.com is rate-limited
+          # (403) for unauthenticated calls from shared runner IPs. The npm
+          # `renovate` version matches the renovatebot/renovate Docker tag.
+          VERSION=$(curl -fsSL https://registry.npmjs.org/renovate/latest | jq -r '.version')
+          if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+            echo "Failed to determine latest Renovate version" >&2
+            exit 1
+          fi
           echo "Latest Renovate version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -251,8 +257,12 @@ jobs:
         run: |
           VERSION="${{ needs.check-renovate.outputs.version }}"
           if [[ -z "$VERSION" ]]; then
-            VERSION=$(curl -fsSL https://api.github.com/repos/renovatebot/renovate/releases/latest \
-              | jq -r '.tag_name')
+            # npm registry, not the rate-limited GitHub API (see check-renovate).
+            VERSION=$(curl -fsSL https://registry.npmjs.org/renovate/latest | jq -r '.version')
+          fi
+          if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+            echo "Failed to determine Renovate version" >&2
+            exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Sanitize platform for artifact name
