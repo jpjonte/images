@@ -1,5 +1,11 @@
 # Flutter-equipped Renovate runner — Implementation Plan
 
+> **SUPERSEDED (2026-06-19).** This plan was executed (custom image + CI built and merged) but
+> the verification gate (Task 3) revealed the premise was wrong: containerbase already supports
+> Flutter (`containerbase/flutter-prebuild`) and the stock runner refreshes `pubspec.lock` given
+> a `GITHUB_COM_TOKEN` (which the cluster has). The custom image was unnecessary and has been
+> removed; nothing was deployed. Kept for the record — see the `renovate-flutter-runner` memory.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Bake Flutter into a custom `ghcr.io/jpjonte/renovate` image so the self-hosted Renovate runner refreshes `pubspec.lock` (and flags unresolvable pub bumps) without dropping containerbase for the other managed repos.
