@@ -1,4 +1,4 @@
-FROM php:8.5-fpm-alpine@sha256:cb4a96fe4ee2888dc2fc5383b72de4a9be045fa8252b33f441ef3435fd22b465
+FROM php:8.5-fpm-alpine@sha256:fd9669cdc9caa2bc4857a2c9f6b5e86c47a7f85043a6717c29901ca4a8b1cd4e
 
 WORKDIR /tmp
 
