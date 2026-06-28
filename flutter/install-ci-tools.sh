@@ -13,6 +13,20 @@ apt-get install -y --no-install-recommends \
   lcov \
   jq
 
+# Node (CI-only): lets the Forgejo runner execute JS actions (actions/checkout,
+# actions/cache) inside this container. Pinned tarball — Debian's apt node is 18,
+# too old for actions/*@node20. TARGETARCH is amd64|arm64; node uses x64|arm64.
+NODE_VERSION="${NODE_VERSION:-20.20.2}"
+case "$TARGETARCH" in
+  amd64) NODE_ARCH=x64 ;;
+  arm64) NODE_ARCH=arm64 ;;
+  *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;;
+esac
+curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
+  | tar -xJ -C /usr/local --strip-components=1 --no-same-owner
+node -e 'process.exit(+process.versions.node.split(".")[0] >= 20 ? 0 : 1)'
+node --version
+
 # glab CLI
 curl -fsSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${TARGETARCH}.deb" \
   -o /tmp/glab.deb
