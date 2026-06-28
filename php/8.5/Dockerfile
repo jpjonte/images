@@ -17,3 +17,9 @@ RUN apk upgrade --no-cache \
   && rm -rf ~/.composer/cache/* \
   && chown -R php:php /var/www /home/php \
   && sh ./cleanup.sh
+
+# Node (CI-only): required so the Forgejo runner can execute JS actions
+# (actions/checkout, actions/cache) inside this job container. Alpine's nodejs
+# package is >=20, which actions/*@node20 require; assert it at build time.
+RUN apk add --no-cache nodejs \
+  && node -e 'process.exit(+process.versions.node.split(".")[0] >= 20 ? 0 : 1)'
