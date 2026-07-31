@@ -9,7 +9,12 @@ set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
+# build-essential + cmake stay in the image: test suites build host-side
+# native helper libraries during CI (e.g. NESd's nesd_audio via
+# bin/build_test_libs.sh), and the SQLCipher build below uses them too.
 apt-get install -y --no-install-recommends \
+  build-essential \
+  cmake \
   lcov \
   jq
 
@@ -44,7 +49,7 @@ dart pub global activate junitreport
 # DynamicLibrary.open('libsqlcipher.so'). libssl3 is pinned (manual) so the
 # autoremove below keeps the libcrypto runtime libsqlcipher links against.
 SQLCIPHER_VERSION="${SQLCIPHER_VERSION:-4.6.1}"
-apt-get install -y --no-install-recommends build-essential libssl-dev libssl3 tcl
+apt-get install -y --no-install-recommends libssl-dev libssl3 tcl
 curl -fsSL "https://github.com/sqlcipher/sqlcipher/archive/refs/tags/v${SQLCIPHER_VERSION}.tar.gz" \
   -o /tmp/sqlcipher.tgz
 tar xzf /tmp/sqlcipher.tgz -C /tmp
@@ -65,5 +70,5 @@ case "$(nm -D /usr/local/lib/libsqlcipher.so)" in
   *) echo 'ERROR: built libsqlcipher.so lacks sqlite3_stmt_isexplain' >&2; exit 1 ;;
 esac
 rm -rf /tmp/sqlcipher.tgz "/tmp/sqlcipher-${SQLCIPHER_VERSION}"
-apt-get purge -y build-essential libssl-dev tcl
+apt-get purge -y libssl-dev tcl
 apt-get autoremove -y
