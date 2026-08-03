@@ -14,7 +14,7 @@
 
 FROM moby/buildkit:v0.32.0@sha256:1f8167fcb0eca5b7126353d35299386945cbb8949cc516c592a49f80cfce4fa2 AS buildkit
 
-FROM data.forgejo.org/forgejo/runner:12@sha256:eb6e7bc21973382d261e6eb883dbd27b8cb56939d33a3bfd79a1352b7f9a33a0
+FROM data.forgejo.org/forgejo/runner:13@sha256:7fb853bfe73c229be6349398359c0a7bd01fadfd17c106607b2221150b799ed2
 USER root
 RUN apk add --no-cache nodejs
 COPY --from=buildkit /usr/bin/buildctl /usr/local/bin/buildctl
