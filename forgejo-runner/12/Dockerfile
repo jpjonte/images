@@ -12,7 +12,7 @@
 # Multi-arch (amd64+arm64): every base here ships both, so buildx resolves the
 # right arch per platform.
 
-FROM moby/buildkit:v0.32.0@sha256:1f8167fcb0eca5b7126353d35299386945cbb8949cc516c592a49f80cfce4fa2 AS buildkit
+FROM moby/buildkit:v0.32.2@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8 AS buildkit
 
 FROM data.forgejo.org/forgejo/runner:12@sha256:eb6e7bc21973382d261e6eb883dbd27b8cb56939d33a3bfd79a1352b7f9a33a0
 USER root
