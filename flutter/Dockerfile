@@ -69,11 +69,20 @@ ARG ANDROID_PLATFORM_VERSION=android-35
 ARG ANDROID_NDK_VERSION=28.2.13676358
 ENV DEBIAN_FRONTEND=noninteractive
 
-# JDK + native build deps for Android/Flutter desktop tooling
+# JDK + native build deps for Android/Flutter desktop tooling.
+# Temurin 21 rather than Debian's openjdk-17: AGP 9.3's lint crashes on JDK 17
+# (its bundled IntelliJ PSI calls the JDK 21-only List.removeLast(), so
+# lintVitalAnalyzeRelease dies with NoSuchMethodError). Bookworm packages no
+# openjdk-21, hence the Adoptium repo.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-      openjdk-17-jdk-headless \
+    install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public \
+      -o /etc/apt/keyrings/adoptium.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb bookworm main" \
+      > /etc/apt/sources.list.d/adoptium.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      temurin-21-jdk \
       clang \
       cmake \
       ninja-build \
