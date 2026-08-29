@@ -11,7 +11,8 @@ ARG YQ_VERSION=4.45.4
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
-# System dependencies (ca-certificates is required on debian-slim for HTTPS).
+# System dependencies (ca-certificates is required on debian-slim for HTTPS;
+# without zstd actions/cache falls back to gzip and save/restore crawls).
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -20,7 +21,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       curl \
       unzip \
       xz-utils \
-      zip
+      zip \
+      zstd
 
 # yq (YAML processor)
 RUN curl -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${TARGETARCH}" \
@@ -65,8 +67,10 @@ FROM base AS android
 ARG TARGETARCH
 ARG ANDROID_CMDLINE_TOOLS_VERSION=11076708
 ARG ANDROID_BUILD_TOOLS_VERSION=35.0.0
-ARG ANDROID_PLATFORM_VERSION=android-35
+ARG ANDROID_PLATFORM_VERSION=android-36
+ARG ANDROID_LEGACY_PLATFORM_VERSION=android-34
 ARG ANDROID_NDK_VERSION=28.2.13676358
+ARG ANDROID_CMAKE_VERSION=3.22.1
 ENV DEBIAN_FRONTEND=noninteractive
 
 # JDK + native build deps for Android/Flutter desktop tooling.
@@ -112,7 +116,9 @@ RUN yes | sdkmanager --licenses > /dev/null 2>&1 \
       "build-tools;${ANDROID_BUILD_TOOLS_VERSION}" \
       "platform-tools" \
       "platforms;${ANDROID_PLATFORM_VERSION}" \
-      "ndk;${ANDROID_NDK_VERSION}"
+      "platforms;${ANDROID_LEGACY_PLATFORM_VERSION}" \
+      "ndk;${ANDROID_NDK_VERSION}" \
+      "cmake;${ANDROID_CMAKE_VERSION}"
 
 # Gradle cache warmup — build a throwaway project to download Gradle & deps.
 # Skipped on arm64: the Android SDK ships x86_64-only binaries (aapt2,
