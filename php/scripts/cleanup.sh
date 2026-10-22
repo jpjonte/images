@@ -6,4 +6,6 @@ rm -rf /tmp/* \
   /usr/includes/* \
   /usr/share/man/* \
   /var/cache/apk/* \
-  /var/tmp/*
+  /var/tmp/* \
+  ~/.pie \
+  "${XDG_CONFIG_HOME:-$HOME/.config}/pie"
