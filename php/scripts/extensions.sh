@@ -12,10 +12,30 @@ install-php-extensions @composer \
   pgsql \
   zip \
   gmp \
-  apcu \
-  redis \
-  pcov \
   gd
+
+# Non-bundled extensions come from PIE instead of PECL. Build tools and -dev
+# packages are removed again afterwards; the runtime libraries stay. redis links
+# the system liblzf because the source archive PIE downloads lacks the bundled
+# liblzf git submodule.
+apk add --no-cache liblzf zstd-libs lz4-libs
+apk add --no-cache --virtual .pie-deps $PHPIZE_DEPS libtool liblzf-dev zstd-dev lz4-dev
+
+pie install --no-cache \
+  apcu/apcu \
+  pecl/pcov
+
+pie install --no-cache phpredis/phpredis \
+  --enable-redis-lzf --with-liblzf=/usr \
+  --enable-redis-zstd --with-libzstd=/usr \
+  --enable-redis-lz4 --with-liblz4=/usr
+
+# PIE leaves debug symbols in; install-php-extensions strips its builds.
+strip --strip-unneeded "$(php-config --extension-dir)"/apcu.so \
+  "$(php-config --extension-dir)"/pcov.so \
+  "$(php-config --extension-dir)"/redis.so
+
+apk del .pie-deps
 
 { \
     echo 'opcache.enable=1'; \
