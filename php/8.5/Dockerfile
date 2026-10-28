@@ -1,7 +1,7 @@
 FROM ghcr.io/php/pie:1.5-bin@sha256:9d3e6d9dafa5ae8cf034489260e206a5aa1b488b29c0ddaea9149826d9e32f52 AS pie
 FROM mlocati/php-extension-installer:2@sha256:ac4b252c153a9f6de5578ff2c417790aba836bb49855543144606033eceda253 AS php-extension-installer
 
-FROM php:8.5-fpm-alpine@sha256:fa01fb1645cd0fc566a5f146b099adace33b906571f972f71f2182a7c12d1cd7
+FROM php:8.5-fpm-alpine@sha256:4c2818074ec49f6abe46620f3965e0cb75bc3a5f2b417edd1aacaba6f091c40e
 
 WORKDIR /tmp
 
