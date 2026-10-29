@@ -1,17 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "assignees": ["jpjonte"],
-  "extends": [
-    "config:recommended",
-    "docker:pinDigests"
-  ],
+  "description": "platformAutomerge is off because GitHub-native auto-merge is unusable on this repo (private repo on a free plan: branch protection is unavailable and 'Allow auto-merge' is off); Renovate merges PRs itself instead.",
+  "platformAutomerge": false,
+  "extends": ["config:recommended", "docker:pinDigests"],
   "packageRules": [
     {
-      "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes :stable/:8.5 on success), so let Renovate group, schedule, and merge them.",
+      "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes :stable/:8.5 on success), so let Renovate group, schedule, and merge them. ignoreTests is required because Renovate otherwise waits for a green status that never comes (no checks = never green, never failed, so the PR is neither merged nor assigned).",
       "matchUpdateTypes": ["digest", "pinDigest"],
       "groupName": "docker base image digests",
       "schedule": ["before 6am on monday"],
-      "automerge": true
+      "automerge": true,
+      "ignoreTests": true
     }
   ]
 }
