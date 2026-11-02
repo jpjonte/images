@@ -1,4 +1,4 @@
-FROM ghcr.io/php/pie:1.5-bin@sha256:9d3e6d9dafa5ae8cf034489260e206a5aa1b488b29c0ddaea9149826d9e32f52 AS pie
+FROM ghcr.io/php/pie:1.5-bin@sha256:3fca03c16df842d02b654dc382db3756058d9c128064f57cace14f8728779ce9 AS pie
 FROM mlocati/php-extension-installer:2@sha256:35821db0661308f64aa18483bb3af56bedc3b40090ff441ed961327d1ccbceb8 AS php-extension-installer
 
 FROM dunglas/frankenphp:1-php8.5-alpine@sha256:974e767f7694964fdb23ead3172dd0a12cedefbd929fbe0db7f69a680663295d
