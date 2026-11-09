@@ -1,7 +1,7 @@
 FROM ghcr.io/php/pie:1.5-bin@sha256:3fca03c16df842d02b654dc382db3756058d9c128064f57cace14f8728779ce9 AS pie
-FROM mlocati/php-extension-installer:2@sha256:35821db0661308f64aa18483bb3af56bedc3b40090ff441ed961327d1ccbceb8 AS php-extension-installer
+FROM mlocati/php-extension-installer:2@sha256:4fd45396c16685266d32bf147a24ecd5e81029d3820295895bf4a90131190ac9 AS php-extension-installer
 
-FROM dunglas/frankenphp:1-php8.5-alpine@sha256:974e767f7694964fdb23ead3172dd0a12cedefbd929fbe0db7f69a680663295d
+FROM dunglas/frankenphp:1-php8.5-alpine@sha256:bf8051e99d28fd546b0d1c1b74329f3eba0496b56bb8cd979a10ab1265e28f5c
 
 WORKDIR /tmp
 
