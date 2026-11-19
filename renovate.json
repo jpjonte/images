@@ -14,6 +14,12 @@
   ],
   "packageRules": [
     {
+      "description": "Each php/<version>/ directory publishes the ghcr.io/jpjonte/php:<version> tag, so its base image must stay on that PHP minor. A new minor gets its own directory instead of a bump.",
+      "matchFileNames": ["php/8.5/**"],
+      "matchPackageNames": ["php"],
+      "allowedVersions": "<8.6"
+    },
+    {
       "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes :stable/:8.5 on success), so let Renovate group, schedule, and merge them. ignoreTests is required because Renovate otherwise waits for a green status that never comes (no checks = never green, never failed, so the PR is neither merged nor assigned).",
       "matchUpdateTypes": ["digest", "pinDigest"],
       "groupName": "docker base image digests",
