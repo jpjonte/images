@@ -28,6 +28,7 @@ jobs:
       php-8_5: ${{ steps.filter.outputs.php-8_5 }}
       frankenphp-8_5: ${{ steps.filter.outputs.frankenphp-8_5 }}
       forgejo-runner-12: ${{ steps.filter.outputs.forgejo-runner-12 }}
+      playwright-1_63: ${{ steps.filter.outputs.playwright-1_63 }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -44,6 +45,8 @@ jobs:
               - 'php/scripts/**'
             forgejo-runner-12:
               - 'forgejo-runner/12/**'
+            playwright-1_63:
+              - 'playwright/1.63/**'
 
   # ── Check for new Flutter stable version (schedule only) ─────────
   check-flutter:
@@ -225,3 +228,15 @@ jobs:
     with:
       name: forgejo-runner
       version: '12'
+
+  playwright:
+    needs: [changes]
+    if: |
+      always() && (
+        (github.event_name == 'push' && needs.changes.outputs.playwright-1_63 == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: playwright
+      version: '1.63'

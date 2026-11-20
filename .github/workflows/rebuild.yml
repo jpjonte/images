@@ -1,9 +1,10 @@
 name: Weekly base rebuild
 
-# Rebuilds the php-family base images weekly so OS security patches (via the
-# Dockerfiles' `apk upgrade`) land without waiting for a code change. A single
-# schedule lives here, so no cron-string disambiguation is needed — contrast
-# build.yml, which owns the daily flutter check.
+# Rebuilds the php-family and playwright base images weekly so OS security
+# patches (via the Dockerfiles' `apk upgrade` / `apt-get upgrade`) land
+# without waiting for a code change. A single schedule lives here, so no
+# cron-string disambiguation is needed — contrast build.yml, which owns the
+# daily flutter check.
 
 on:
   schedule:
@@ -25,3 +26,9 @@ jobs:
     with:
       name: frankenphp
       version: '8.5'
+
+  playwright:
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: playwright
+      version: '1.63'
