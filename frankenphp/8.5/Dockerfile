@@ -1,5 +1,5 @@
 FROM ghcr.io/php/pie:1.6-bin@sha256:f49c15dbb88a7aec373fdb15ab9004bf08958772db3b476c42364e10a8ea416f AS pie
-FROM mlocati/php-extension-installer:2@sha256:4fd45396c16685266d32bf147a24ecd5e81029d3820295895bf4a90131190ac9 AS php-extension-installer
+FROM mlocati/php-extension-installer:2@sha256:584fcc217b94a10187367552f6571cd8680ee4bf22bd752f1087a7d55e35e7de AS php-extension-installer
 
 FROM dunglas/frankenphp:1-php8.5-alpine@sha256:45b44e677ae199015523e2e4d4a3543cf852d15e9c2aa6dca0f441a959f749dc
 
