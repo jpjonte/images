@@ -21,11 +21,22 @@ install-php-extensions @composer \
 apk add --no-cache liblzf zstd-libs lz4-libs
 apk add --no-cache --virtual .pie-deps $PHPIZE_DEPS libtool liblzf-dev zstd-dev lz4-dev
 
-pie install --no-cache \
-  apcu/apcu \
-  pecl/pcov
+# apcu 5.1.28, pcov 1.0.12 and phpredis 6.3.0 do not build on PHP 8.6. The
+# fixes are merged upstream (krakjoe/apcu#629, krakjoe/pcov#134) or in a release
+# candidate (phpredis 6.4.0RC1), so 8.6 installs those instead. Drop this once
+# apcu 5.1.29, pcov 1.0.13 and phpredis 6.4.0 are released.
+if [ "$(php -r 'echo PHP_VERSION_ID >= 80600 ? 1 : 0;')" = 1 ]; then
+  pie install --no-cache 'apcu/apcu:dev-master#fb2c942552a3f5dab7f4dea4afb5cf0831222c57'
+  pie install --no-cache 'pecl/pcov:dev-develop#3795c08561d69ca7f55f693492de59a65a6a182d'
+  redis=phpredis/phpredis:6.4.0RC1
+else
+  pie install --no-cache \
+    apcu/apcu \
+    pecl/pcov
+  redis=phpredis/phpredis
+fi
 
-pie install --no-cache phpredis/phpredis \
+pie install --no-cache "$redis" \
   --enable-redis-lzf --with-liblzf=/usr \
   --enable-redis-zstd --with-libzstd=/usr \
   --enable-redis-lz4 --with-liblz4=/usr

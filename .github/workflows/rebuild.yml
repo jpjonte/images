@@ -27,6 +27,18 @@ jobs:
       name: frankenphp
       version: '8.5'
 
+  php-8_6:
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: php
+      version: '8.6'
+
+  frankenphp-8_6:
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: frankenphp
+      version: '8.6'
+
   playwright:
     uses: ./.github/workflows/_image.yml
     with:

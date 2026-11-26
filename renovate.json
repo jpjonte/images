@@ -20,13 +20,19 @@
       "allowedVersions": "<8.6"
     },
     {
+      "description": "Same as above for php/8.6/: keep the ghcr.io/jpjonte/php:8.6 base on PHP 8.6.",
+      "matchFileNames": ["php/8.6/**"],
+      "matchPackageNames": ["php"],
+      "allowedVersions": "<8.7"
+    },
+    {
       "description": "Each playwright/<minor>/ directory publishes the ghcr.io/jpjonte/playwright:<minor> tag, so its base image must stay on that Playwright minor. A new minor gets its own directory instead of a bump.",
       "matchFileNames": ["playwright/1.63/**"],
       "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "allowedVersions": "<1.64"
     },
     {
-      "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes :stable/:8.5 on success), so let Renovate group, schedule, and merge them. ignoreTests is required because Renovate otherwise waits for a green status that never comes (no checks = never green, never failed, so the PR is neither merged nor assigned).",
+      "description": "Batch all base-image digest bumps into one self-merging PR per week. These carry no review value (PRs run no CI; the real multi-arch build runs post-merge on main and only republishes the image tags on success), so let Renovate group, schedule, and merge them. ignoreTests is required because Renovate otherwise waits for a green status that never comes (no checks = never green, never failed, so the PR is neither merged nor assigned).",
       "matchUpdateTypes": ["digest", "pinDigest"],
       "groupName": "docker base image digests",
       "schedule": ["before 6am on monday"],

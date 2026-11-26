@@ -27,6 +27,8 @@ jobs:
       flutter: ${{ steps.filter.outputs.flutter }}
       php-8_5: ${{ steps.filter.outputs.php-8_5 }}
       frankenphp-8_5: ${{ steps.filter.outputs.frankenphp-8_5 }}
+      php-8_6: ${{ steps.filter.outputs.php-8_6 }}
+      frankenphp-8_6: ${{ steps.filter.outputs.frankenphp-8_6 }}
       forgejo-runner-12: ${{ steps.filter.outputs.forgejo-runner-12 }}
       playwright-1_63: ${{ steps.filter.outputs.playwright-1_63 }}
     steps:
@@ -42,6 +44,12 @@ jobs:
               - 'php/scripts/**'
             frankenphp-8_5:
               - 'frankenphp/8.5/**'
+              - 'php/scripts/**'
+            php-8_6:
+              - 'php/8.6/**'
+              - 'php/scripts/**'
+            frankenphp-8_6:
+              - 'frankenphp/8.6/**'
               - 'php/scripts/**'
             forgejo-runner-12:
               - 'forgejo-runner/12/**'
@@ -191,7 +199,7 @@ jobs:
 
   # ── PHP and FrankenPHP (via the reusable _image workflow) ────
   # On push, each is gated independently by change detection; workflow_dispatch
-  # rebuilds both. The weekly OS-patch rebuild lives in rebuild.yml.
+  # rebuilds all of them. The weekly OS-patch rebuild lives in rebuild.yml.
   php:
     needs: [changes]
     if: |
@@ -215,6 +223,30 @@ jobs:
     with:
       name: frankenphp
       version: '8.5'
+
+  php-8_6:
+    needs: [changes]
+    if: |
+      always() && (
+        (github.event_name == 'push' && needs.changes.outputs.php-8_6 == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: php
+      version: '8.6'
+
+  frankenphp-8_6:
+    needs: [changes]
+    if: |
+      always() && (
+        (github.event_name == 'push' && needs.changes.outputs.frankenphp-8_6 == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    uses: ./.github/workflows/_image.yml
+    with:
+      name: frankenphp
+      version: '8.6'
 
   # Built by the generic _image.yml workflow (name + version → <name>/<version>/Dockerfile).
   forgejo-runner:
