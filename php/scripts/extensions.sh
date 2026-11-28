@@ -2,7 +2,11 @@
 
 set -eu
 
+# mbstring is built into the official images only up to PHP 8.5; from 8.6 it
+# must be installed like any other extension. install-php-extensions skips it
+# where it is already present.
 install-php-extensions @composer \
+  mbstring \
   exif \
   pcntl \
   bcmath \
